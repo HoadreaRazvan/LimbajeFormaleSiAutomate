@@ -1,0 +1,9 @@
+SimbolStart: E
+Neterminale: E,T,F,G,H
+Terminale: a,+,*,(,)
+Productii:
+E -> TG
+G -> +TG | null
+T -> FH
+H -> *FH | null
+F -> a | (E)
