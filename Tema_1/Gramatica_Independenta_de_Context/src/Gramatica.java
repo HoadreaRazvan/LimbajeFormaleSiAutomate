@@ -73,7 +73,7 @@ public class Gramatica {
                 }
 
                 if (sirCurent.length() > numarMaximCaractere) {
-                    System.out.println("\nSir prea lung, regenerare...\n");
+                    System.out.println("\nSir prea lung, regenerare...\n"+sirCurent+"\n");
                     break;
                 }
 

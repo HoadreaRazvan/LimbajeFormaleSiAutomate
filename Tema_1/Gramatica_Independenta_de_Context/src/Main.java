@@ -7,5 +7,5 @@ public class Main {
 
         System.out.println("\nDerivare extrem dreapta:");
         gramatica.genereazaSiruri(60, 5, false);
-    }
+     }
 }
