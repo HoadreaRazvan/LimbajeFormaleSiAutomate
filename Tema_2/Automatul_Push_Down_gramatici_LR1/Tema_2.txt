@@ -1,0 +1,40 @@
+Action Table Header: a + * ( ) $
+Action Table: 12
+d5 - - d4 - -
+- d6 - - - acc
+- r2 d7 - r2 r2
+- r4 r4 - r4 r4
+d5 - - d4 - -
+- r6 r6 - r6 r6
+d5 - - d4 - -
+d5 - - d4 - -
+- d6 - - d11 -
+- r1 d7 - r1 r1
+- r3 r3 - r3 r3
+- r5 r5 - r5 r5
+
+Go to Table Header: E T F
+Go To Table: 12
+1 2 3
+- - -
+- - -
+- - -
+8 2 3
+- - -
+- 9 3
+- - 10
+- - -
+- - -
+- - -
+- - -
+
+Production: 7
+E->E+T
+E->T
+T->T*F
+T->F
+F->(E)
+F->a
+F->(E)
+
+Parse Input String: a+a*a
