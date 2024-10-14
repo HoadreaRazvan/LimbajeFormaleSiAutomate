@@ -21,9 +21,7 @@ public class LR1PushDownAutomaton {
             String line;
             String currentSection = "";
             int linesToRead = 0;
-            List<String> actionTableHeaderList = new ArrayList<>();
             List<String[]> actionTableList = new ArrayList<>();
-            List<String> gotoTableHeaderList = new ArrayList<>();
             List<String[]> gotoTableList = new ArrayList<>();
             List<String> productionList = new ArrayList<>();
 
@@ -35,14 +33,14 @@ public class LR1PushDownAutomaton {
                 if (line.startsWith("Action Table Header:")) {
                     currentSection = "ACTION_TABLE_HEADER";
                     String headerLine = line.substring("Action Table Header:".length()).trim();
-                    actionTableHeaderList = Arrays.asList(headerLine.split("\\s+"));
+                    this.actionTableHeader=headerLine.split("\\s+");
                 } else if (line.startsWith("Action Table:")) {
                     currentSection = "ACTION_TABLE";
                     linesToRead = Integer.parseInt(line.substring("Action Table:".length()).trim());
                 } else if (line.startsWith("Go to Table Header:")) {
                     currentSection = "GOTO_TABLE_HEADER";
                     String headerLine = line.substring("Go to Table Header:".length()).trim();
-                    gotoTableHeaderList = Arrays.asList(headerLine.split("\\s+"));
+                    this.gotoTableHeader = headerLine.split("\\s+");
                 } else if (line.startsWith("Go To Table:")) {
                     currentSection = "GOTO_TABLE";
                     linesToRead = Integer.parseInt(line.substring("Go To Table:".length()).trim());
@@ -51,7 +49,7 @@ public class LR1PushDownAutomaton {
                     linesToRead = Integer.parseInt(line.substring("Production:".length()).trim());
                 } else if (line.startsWith("Parse Input String:")) {
                     currentSection = "PARSE_INPUT_STRING";
-                    this.parseInputString = line.substring("Parse Input String:".length()).trim();
+                    this.parseInputString = line.substring("Parse Input String:".length()).trim()+"$";
                 } else {
 
                     if (currentSection.equals("ACTION_TABLE") && linesToRead > 0) {
@@ -69,19 +67,15 @@ public class LR1PushDownAutomaton {
                 }
             }
 
-            this.actionTableHeader = actionTableHeaderList.toArray(new String[0]);
             this.actionTable = actionTableList.toArray(new String[0][]);
-            this.gotoTableHeader = gotoTableHeaderList.toArray(new String[0]);
             this.gotoTable = gotoTableList.toArray(new String[0][]);
 
             this.production = new LinkedHashMap<>();
             for (String prodLine : productionList) {
                 String[] parts = prodLine.split("->");
-                if (parts.length == 2) {
-                    String lhs = parts[0].trim();
-                    String rhs = parts[1].trim();
-                    this.production.computeIfAbsent(lhs, k -> new ArrayList<>()).add(rhs);
-                }
+                    String l = parts[0].trim();
+                    String r = parts[1].trim();
+                    this.production.computeIfAbsent(l, k -> new ArrayList<>()).add(r);
             }
 
         } catch (IOException e) {
@@ -99,7 +93,7 @@ public class LR1PushDownAutomaton {
         System.out.println();
 
         for (int i = 0; i < this.actionTable.length; i++) {
-            System.out.print((i + 1) + "\t");
+            System.out.print((i) + "\t");
             for (String cell : this.actionTable[i]) {
                 System.out.print(cell + "\t");
             }
@@ -115,7 +109,7 @@ public class LR1PushDownAutomaton {
         System.out.println();
 
         for (int i = 0; i < this.gotoTable.length; i++) {
-            System.out.print((i + 1) + "\t");
+            System.out.print((i) + "\t");
             for (String cell : this.gotoTable[i]) {
                 System.out.print(cell + "\t");
             }
@@ -150,6 +144,13 @@ public class LR1PushDownAutomaton {
         return -1;
     }
 
+    private String getAction(int state, char symbol) {
+        int col = this.getActionColumn(symbol);
+        if (col == -1)
+            return null;
+        return this.actionTable[state][col];
+    }
+
     private int getGoto(int state, char nonTerminal) {
         int col = -1;
         for (int i = 0; i < this.gotoTableHeader.length; i++)
@@ -160,40 +161,32 @@ public class LR1PushDownAutomaton {
         return Integer.parseInt(this.gotoTable[state][col]);
     }
 
-    private String getAction(int state, char symbol) {
-        int col = this.getActionColumn(symbol);
-        if (col == -1 || state >= this.actionTable.length)
-            return null;
-        return this.actionTable[state][col];
-    }
-
     private void popStack(int count) {
         for (int i = 0; i < count; i++)
             this.stack.pop();
     }
 
-    public void parseInput() {
-        String input=this.parseInputString;
-        input = input + "$";
-        String inputDisplay=input,action;
+    public void parseInput() {;
+        String action;
         int sizePrintStack = 0,index = 0,state,newState,production;
         char symbol;
         this.stack.push(new Pair<>("$", 0));
 
-        while (index < input.length()) {
+        while (index < this.parseInputString.length()) {
             state = this.stack.peek().getValue();
-            symbol = input.charAt(index);
+            symbol = this.parseInputString.charAt(index);
             action = this.getAction(state, symbol);
 
             this.printStack(++sizePrintStack);
-            System.out.print("\t" + inputDisplay.substring(index) + "\t"  + action);
+            System.out.print("\t" + this.parseInputString.substring(index) + "\t"  + action);
 
-            if (action == null || action.equals("")) {
+            if (action == null || action.equals("")){
                 System.out.println("\nParse error.");
                 return;
             }
 
             if (action.startsWith("d")) {
+                System.out.println();
                 newState = Integer.parseInt(action.substring(1));
                 this.stack.push(new Pair<>(String.valueOf(symbol), newState));
                 index++;
@@ -205,7 +198,7 @@ public class LR1PushDownAutomaton {
                 return;
             }
         }
-        System.out.println("\nThe input string is incorrect.");
+        System.out.println("\nParse error.");
     }
 
     private void reduce(int state) {
