@@ -1,4 +1,4 @@
-Action Table Header: a + * ( ) $ -
+Action Table Header: a + * ( ) $
 Action Table: 12
 d5 - - d4 - -
 - d6 - - - acc
@@ -35,6 +35,5 @@ T->T*F
 T->F
 F->(E)
 F->a
-E->E-T
 
-Parse Input String: a+a
+Parse Input String: a*(a+a)

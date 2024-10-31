@@ -13,72 +13,11 @@ public class LR1PushDownAutomaton {
     public LR1PushDownAutomaton() {
         this.stack = new Stack<>();
         this.readingFile();
-        this.readingFileTables();
         this.show();
     }
 
-    private void readingFileTables() {
-        try (BufferedReader br = new BufferedReader(new FileReader("C:\\Users\\hoadr\\OneDrive\\Desktop\\File.txt"))) {
-            String line;
-            String currentSection = "";
-            int linesToRead = 0;
-            List<String[]> actionTableList = new ArrayList<>();
-            List<String[]> gotoTableList = new ArrayList<>();
-            List<String> productionList = new ArrayList<>();
-
-            while ((line = br.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-               if (line.startsWith("Action Table:")) {
-                    currentSection = "ACTION_TABLE";
-                    linesToRead = Integer.parseInt(line.substring("Action Table:".length()).trim());
-                } else if (line.startsWith("Go To Table:")) {
-                    currentSection = "GOTO_TABLE";
-                    linesToRead = Integer.parseInt(line.substring("Go To Table:".length()).trim());
-                }   else {
-
-                    if (currentSection.equals("ACTION_TABLE") && linesToRead > 0) {
-                        String[] tokens = line.split("\\s+");
-
-                        String[] newTokens = new String[tokens.length];
-                        newTokens[0]=tokens[6];
-                        newTokens[1]=tokens[4];
-                        newTokens[2]=tokens[3];
-                        newTokens[3]=tokens[1];
-                        newTokens[4]=tokens[2];
-                        newTokens[5]=tokens[0];
-                        newTokens[6]=tokens[5];
-
-
-                        actionTableList.add(newTokens);
-                        linesToRead--;
-                    } else if (currentSection.equals("GOTO_TABLE") && linesToRead > 0) {
-                        String[] tokens = line.split("\\s+");
-                        String[] newTokens = new String[tokens.length];
-                        newTokens[0]=tokens[0];
-                        newTokens[1]=tokens[2];
-                        newTokens[2]=tokens[1];
-
-                        gotoTableList.add(newTokens);
-                        linesToRead--;
-                    }
-                }
-            }
-
-            this.actionTable = actionTableList.toArray(new String[0][]);
-            this.gotoTable = gotoTableList.toArray(new String[0][]);
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
     private void readingFile() {
-        try (BufferedReader br = new BufferedReader(new FileReader("Tema_2.txt"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader("Tema_4.txt"))) {
             String line;
             String currentSection = "";
             int linesToRead = 0;
@@ -95,18 +34,33 @@ public class LR1PushDownAutomaton {
                     currentSection = "ACTION_TABLE_HEADER";
                     String headerLine = line.substring("Action Table Header:".length()).trim();
                     this.actionTableHeader=headerLine.split("\\s+");
-                }  else if (line.startsWith("Go to Table Header:")) {
+                } else if (line.startsWith("Action Table:")) {
+                    currentSection = "ACTION_TABLE";
+                    linesToRead = Integer.parseInt(line.substring("Action Table:".length()).trim());
+                } else if (line.startsWith("Go to Table Header:")) {
                     currentSection = "GOTO_TABLE_HEADER";
                     String headerLine = line.substring("Go to Table Header:".length()).trim();
                     this.gotoTableHeader = headerLine.split("\\s+");
-                }  else if (line.startsWith("Production:")) {
+                } else if (line.startsWith("Go To Table:")) {
+                    currentSection = "GOTO_TABLE";
+                    linesToRead = Integer.parseInt(line.substring("Go To Table:".length()).trim());
+                } else if (line.startsWith("Production:")) {
                     currentSection = "PRODUCTION";
                     linesToRead = Integer.parseInt(line.substring("Production:".length()).trim());
                 } else if (line.startsWith("Parse Input String:")) {
                     currentSection = "PARSE_INPUT_STRING";
                     this.parseInputString = line.substring("Parse Input String:".length()).trim()+"$";
                 } else {
-                    if (currentSection.equals("PRODUCTION") && linesToRead > 0) {
+
+                    if (currentSection.equals("ACTION_TABLE") && linesToRead > 0) {
+                        String[] tokens = line.split("\\s+");
+                        actionTableList.add(tokens);
+                        linesToRead--;
+                    } else if (currentSection.equals("GOTO_TABLE") && linesToRead > 0) {
+                        String[] tokens = line.split("\\s+");
+                        gotoTableList.add(tokens);
+                        linesToRead--;
+                    } else if (currentSection.equals("PRODUCTION") && linesToRead > 0) {
                         productionList.add(line);
                         linesToRead--;
                     }
@@ -119,9 +73,9 @@ public class LR1PushDownAutomaton {
             this.production = new LinkedHashMap<>();
             for (String prodLine : productionList) {
                 String[] parts = prodLine.split("->");
-                    String l = parts[0].trim();
-                    String r = parts[1].trim();
-                    this.production.computeIfAbsent(l, k -> new ArrayList<>()).add(r);
+                String l = parts[0].trim();
+                String r = parts[1].trim();
+                this.production.computeIfAbsent(l, k -> new ArrayList<>()).add(r);
             }
 
         } catch (IOException e) {
@@ -247,11 +201,56 @@ public class LR1PushDownAutomaton {
         System.out.println("\nParse error.");
     }
 
+    private Stack<String> intermediateCode = new Stack<>();
+    private Stack<String> intermediateShow = new Stack<>();
+    private int indexID=0,indexCode=0;
+
     private void reduce(int state) {
         String productionKeyValue = this.getValueForKeyAtIndex(state);
         this.popStack(productionKeyValue.split("\\|")[1].length());
         System.out.println("->"+productionKeyValue.split("\\|")[0]+"+TS("+this.stack.peek().getValue()+","+productionKeyValue.split("\\|")[0]+")");
         this.stack.push(new Pair<>(productionKeyValue.split("\\|")[0], this.getGoto(this.stack.peek().getValue(), productionKeyValue.charAt(0))));
+
+        String rule=productionKeyValue.split("\\|")[1];
+        if(rule.length()==1 || rule.charAt(0)=='(')
+        {
+            if(rule.equals("a")==true)
+            {
+                intermediateCode.push("a"+ ++indexID);
+            }
+        }
+        else
+        {
+            String line="";
+            for (int i = rule.length() - 1; i >= 0; i--) {
+                char c = rule.charAt(i);
+                if(!(c=='-' || c=='+' || c=='*' || c=='/')) {
+                    String a = intermediateCode.pop();
+                    line = a+line;
+                }
+                else
+                {
+                    line=c+line;
+                }
+            }
+            intermediateCode.push("t"+ ++indexCode);
+            intermediateShow.push("t"+indexCode+"="+line);
+        }
+    }
+
+    public void showStack()
+    {
+        System.out.println("Intermediate Code");
+        String show="";
+        while(!intermediateShow.isEmpty())
+        {
+            show+=intermediateShow.pop()+"|";
+        }
+        String []showArray=show.split("\\|");
+        for(int i=showArray.length-1;i>=0;i--)
+        {
+            System.out.println(showArray[i]);
+        }
     }
 
     public String getValueForKeyAtIndex(int index) {
